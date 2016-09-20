@@ -4,11 +4,28 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+docker_run() {
+    local name=$1
+    shift
+
+    local running=$(docker ps -q --filter name=$name)
+    if [ "$running" = "" ]; then
+        docker run --name $name $*
+    fi
+}
+
 echo ">>> Starting zookeeper (for exhibitor bootstrap and quorum)"
-docker run -d -p 2181:2181 -p 2888:2888 -p 3888:3888 --restart=always jplock/zookeeper
+docker_run "dcos-docker-zookeeper" \
+           -d -p 2181:2181 -p 2888:2888 -p 3888:3888 \
+           --restart=always \
+           jplock/zookeeper
 
 echo ">>> Starting nginx (for distributing bootstrap artifacts to cluster)"
-docker run -d -v /var/tmp/dcos:/usr/share/nginx/html -p 80:80 --restart=always nginx
+docker_run "dcos-docker-nginx" \
+           -d -v /var/tmp/dcos:/usr/share/nginx/html \
+           -p 80:80 \
+           --restart=always \
+           nginx
 
 # Provide a local docker registry for testing purposes. Agents will also get
 # the boot node allowed as an insecure registry.
