@@ -196,6 +196,16 @@ Vagrant.configure(2) do |config|
 
   # Avoid random ssh key for demo purposes
   config.ssh.insert_key = false
+
+  # Proxy configuration
+#  if Vagrant.has_plugin?("vagrant-proxyconf")
+#    config.proxy.enabled = false
+#    config.proxy.enabled = {yum: true}
+#    
+#    config.proxy.http = "http://web-proxy.europe.hp.com:8080/"
+#    config.proxy.https = "http://web-proxy.europe.hp.com:8080/"
+#    config.proxy.no_proxy = "192.168.122.1,16.209.133.240,.dcos,.mesos,127.0.0.1,localhost"
+#  end
   
   # Vagrant Plugin Configuration: vagrant-vbguest
   if Vagrant.has_plugin?('vagrant-vbguest')
@@ -286,6 +296,23 @@ Vagrant.configure(2) do |config|
           dcos.install_method = user_config.install_method
           dcos.machine_types = machine_types
           dcos.config_template_path = user_config.config_path
+        end
+      end
+
+      # After the /opt/memosphere.. is installed by dcos-setup
+      config = YAML.load_file(Pathname.new(user_config.config_path).realpath)
+      if config["use_proxy"]
+        case machine_type['type']
+        when 'agent-private'
+          machine.vm.provision :shell do |vm|
+            vm.name = 'Configure docker proxies'
+            vm.path = provision_script_path('configure-docker-proxies')
+            vm.args = [
+              config["http_proxy"],
+              config["https_proxy"],
+              config["no_proxy"].join(","),
+            ]
+          end
         end
       end
     end

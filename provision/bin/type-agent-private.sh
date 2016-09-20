@@ -14,7 +14,8 @@ fi
 set -o errexit
 
 echo ">>> Installing DC/OS slave"
-curl --fail --location --max-redir 0 --silent --show-error --verbose http://boot.dcos/dcos_install.sh | bash -s -- slave
+curl -o dcos_install.sh --fail --location --max-redir 0 --silent --show-error --verbose http://boot.dcos/dcos_install.sh
+bash -x dcos_install.sh -- slave 2>&1 | tee dcos_install_output.log
 
 echo ">>> Executing DC/OS Postflight"
 dcos-postflight
